@@ -13,7 +13,6 @@ router = APIRouter(prefix="/compliance", tags=["compliance"])
 
 
 def generate_case_certificate(case: ComplianceCase) -> str:
-    """Generate a PDF certificate for a compliance case and return the file path."""
     output_dir = Path("/tmp/compliance-certificates")
     output_dir.mkdir(parents=True, exist_ok=True)
     pdf_path = output_dir / f"{case.case_id}.pdf"
@@ -44,7 +43,6 @@ def generate_case_certificate(case: ComplianceCase) -> str:
 
 @router.get("/cases")
 def list_cases(db: Session = Depends(get_db)) -> list[dict]:
-    """List all compliance cases."""
     cases = db.query(ComplianceCase).order_by(ComplianceCase.created_at.desc()).all()
     return [
         {
@@ -63,7 +61,6 @@ def list_cases(db: Session = Depends(get_db)) -> list[dict]:
 
 @router.post("/submit")
 def submit_case(payload: ComplianceSubmission, db: Session = Depends(get_db)) -> dict:
-    """Submit a new compliance case."""
     case_id = str(uuid.uuid4())[:8]
 
     new_case = ComplianceCase(
@@ -98,7 +95,6 @@ def submit_case(payload: ComplianceSubmission, db: Session = Depends(get_db)) ->
 
 @router.get("/status/{case_id}")
 def get_case_status(case_id: str, db: Session = Depends(get_db)) -> ComplianceStatus:
-    """Get detailed status of a specific compliance case."""
     case = db.query(ComplianceCase).filter(ComplianceCase.case_id == case_id).first()
 
     if not case:
@@ -118,7 +114,6 @@ def get_case_status(case_id: str, db: Session = Depends(get_db)) -> ComplianceSt
 
 @router.post("/certificate/{case_id}")
 def generate_certificate(case_id: str, db: Session = Depends(get_db)) -> dict:
-    """Generate a PDF-based compliance clearance certificate for a case."""
     case = db.query(ComplianceCase).filter(ComplianceCase.case_id == case_id).first()
     if not case:
         raise HTTPException(status_code=404, detail=f"Case {case_id} not found")

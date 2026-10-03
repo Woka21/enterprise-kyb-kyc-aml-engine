@@ -4,13 +4,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routers import compliance
 from app.db import Base, engine
 
-# Create all database tables
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Compliance Engine API",
     version="0.1.0",
-    description="Enterprise KYB/KYC/AML compliance orchestration engine",
+    description="Enterprise KYB / KYC / AML compliance orchestration engine",
 )
 
 app.add_middleware(
