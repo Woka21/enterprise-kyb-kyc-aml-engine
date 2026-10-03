@@ -1,20 +1,35 @@
+import csv
 import os
-import time
-import logging
+from pathlib import Path
+from typing import List
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+WATCHLIST_PATH = Path(__file__).resolve().parent / "watchlist.csv"
 
-DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://compliance:compliance_secret@postgres:5432/compliance')
 
-logger.info('AML Engine initialized')
-logger.info(f'Database URL configured: {DATABASE_URL}')
+def load_watchlist(path: Path = WATCHLIST_PATH) -> List[str]:
+    names: List[str] = []
+    if not path.exists():
+        return names
 
-while True:
-    try:
-        logger.info('Running sanctions and PEP watchlist matching...')
-        # TODO: Integrate OpenSanctions database for fuzzy matching
-        time.sleep(30)
-    except Exception as e:
-        logger.error(f'Error in AML engine: {e}')
-        time.sleep(30)
+    with path.open("r", newline="", encoding="utf-8") as file:
+        reader = csv.DictReader(file)
+        for row in reader:
+            if row.get("name"):
+                names.append(row["name"].strip())
+    return names
+
+
+def match_against_watchlist(name: str, watchlist: List[str] | None = None) -> bool:
+    names = watchlist or load_watchlist()
+    normalized_name = name.strip().lower()
+    for item in names:
+        if normalized_name == item.strip().lower():
+            return True
+    return False
+
+
+if __name__ == "__main__":
+    sample_names = ["John Doe", "Mary Smith", "Alice Wanjiru", "Kofi Mensah"]
+    watchlist = load_watchlist()
+    for name in sample_names:
+        print(f"{name}: {'MATCH' if match_against_watchlist(name, watchlist) else 'CLEAR'}")
