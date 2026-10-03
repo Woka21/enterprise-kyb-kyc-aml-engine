@@ -19,6 +19,8 @@ type FormState = {
   risk_level: string;
 };
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001';
+
 const initialForm: FormState = {
   company_name: '',
   kra_pin: '',
@@ -32,14 +34,22 @@ export default function App() {
   const [form, setForm] = useState<FormState>(initialForm);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const fetchCases = async () => {
     try {
-      const response = await fetch('http://localhost:8001/api/v1/compliance/cases');
+      setError('');
+      const response = await fetch(`${API_URL}/api/v1/compliance/cases`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
       setCases(data);
-    } catch (error) {
-      console.error('Error loading cases', error);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load cases';
+      setError(message);
+      console.error('Error loading cases', err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -56,24 +66,34 @@ export default function App() {
     event.preventDefault();
     setIsSubmitting(true);
     setStatusMessage('');
+    setError('');
 
     try {
-      const response = await fetch('http://localhost:8001/api/v1/compliance/submit', {
+      const response = await fetch(`${API_URL}/api/v1/compliance/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
 
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const result = await response.json();
-      setStatusMessage(`Case ${result.id} created successfully.`);
+      setStatusMessage(`✓ Case ${result.id} created successfully. Compliance check initiated.`);
       setForm(initialForm);
       await fetchCases();
-    } catch (error) {
-      setStatusMessage('Unable to submit case right now. Please try again.');
-      console.error(error);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to submit';
+      setStatusMessage(`✗ Unable to submit case: ${message}`);
+      console.error(err);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const stats = {
+    total: cases.length + 1240,
+    approved: cases.filter((item) => item.clearance === 'approved').length + 1185,
+    review: cases.filter((item) => item.status === 'submitted' || item.status === 'under_review').length + 42,
+    alerts: cases.filter((item) => item.risk_level === 'high').length + 7,
   };
 
   return (
@@ -83,25 +103,25 @@ export default function App() {
           <p className="eyebrow">Enterprise compliance platform</p>
           <h1>KYB / KYC / AML Engine</h1>
         </div>
-        <button className="primary-btn">New compliance check</button>
+        {error && <div className="error-banner">⚠️ API Connection Issue</div>}
       </header>
 
       <section className="summary-cards">
         <div className="card">
           <span>Total checks</span>
-          <strong>{cases.length + 1240}</strong>
+          <strong>{stats.total.toLocaleString()}</strong>
         </div>
         <div className="card">
           <span>Approved</span>
-          <strong>{cases.filter((item) => item.clearance === 'approved').length + 1185}</strong>
+          <strong>{stats.approved.toLocaleString()}</strong>
         </div>
         <div className="card">
           <span>Review queue</span>
-          <strong>{42 + cases.filter((item) => item.status === 'under_review').length}</strong>
+          <strong>{stats.review.toLocaleString()}</strong>
         </div>
         <div className="card">
           <span>Risk alerts</span>
-          <strong>7</strong>
+          <strong>{stats.alerts}</strong>
         </div>
       </section>
 
@@ -115,25 +135,43 @@ export default function App() {
           <form onSubmit={handleSubmit} className="onboarding-form">
             <label>
               Company name
-              <input name="company_name" value={form.company_name} onChange={handleChange} required />
+              <input
+                name="company_name"
+                value={form.company_name}
+                onChange={handleChange}
+                placeholder="e.g., Nairobi Tech Ltd"
+                required
+              />
             </label>
 
             <label>
               KRA PIN
-              <input name="kra_pin" value={form.kra_pin} onChange={handleChange} required />
+              <input
+                name="kra_pin"
+                value={form.kra_pin}
+                onChange={handleChange}
+                placeholder="e.g., P051234567Z"
+                required
+              />
             </label>
 
             <label>
               Director / owner name
-              <input name="director_name" value={form.director_name} onChange={handleChange} required />
+              <input
+                name="director_name"
+                value={form.director_name}
+                onChange={handleChange}
+                placeholder="Full legal name"
+                required
+              />
             </label>
 
             <label>
               Document type
               <select name="document_type" value={form.document_type} onChange={handleChange}>
                 <option value="certificate_of_incorporation">Certificate of Incorporation</option>
-                <option value="kra_certificate">KRA Certificate</option>
-                <option value="national_id">National ID</option>
+                <option value="kra_certificate">KRA Compliance Certificate</option>
+                <option value="national_id">National ID Card</option>
                 <option value="passport">Passport</option>
               </select>
             </label>
@@ -148,7 +186,7 @@ export default function App() {
             </label>
 
             <div className="consent-row">
-              <input type="checkbox" defaultChecked />
+              <input type="checkbox" defaultChecked required />
               <span>I consent to the compliance review and data processing required under the ODPC Act.</span>
             </div>
 
@@ -157,39 +195,57 @@ export default function App() {
             </button>
           </form>
 
-          {statusMessage && <p className="status-message">{statusMessage}</p>}
+          {statusMessage && (
+            <p className={`status-message ${statusMessage.startsWith('✓') ? 'success' : 'error'}`}>
+              {statusMessage}
+            </p>
+          )}
         </section>
 
         <section className="panel">
           <div className="panel-header">
             <h2>Executive review dashboard</h2>
-            <span>Last synced 2m ago</span>
+            <span>Live compliance cases</span>
           </div>
 
-          <table>
-            <thead>
-              <tr>
-                <th>Client</th>
-                <th>Status</th>
-                <th>KYB</th>
-                <th>KYC</th>
-                <th>AML</th>
-                <th>Clearance</th>
-              </tr>
-            </thead>
-            <tbody>
-              {cases.map((item) => (
-                <tr key={item.id}>
-                  <td>{item.company_name}</td>
-                  <td>{item.status}</td>
-                  <td>{item.kyb_score}%</td>
-                  <td>{item.kyc_score}%</td>
-                  <td>{item.aml_score}%</td>
-                  <td>{item.clearance}</td>
+          {loading ? (
+            <p className="loading">Loading compliance cases...</p>
+          ) : cases.length === 0 ? (
+            <p className="no-data">No compliance cases yet. Submit one using the onboarding form.</p>
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>Client</th>
+                  <th>Status</th>
+                  <th>KYB</th>
+                  <th>KYC</th>
+                  <th>AML</th>
+                  <th>Clearance</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {cases.map((item) => (
+                  <tr key={item.id}>
+                    <td>
+                      <strong>{item.company_name}</strong>
+                      <br />
+                      <span className="pin">{item.kra_pin}</span>
+                    </td>
+                    <td>
+                      <span className={`badge status-${item.status}`}>{item.status.replace('_', ' ')}</span>
+                    </td>
+                    <td>{item.kyb_score}%</td>
+                    <td>{item.kyc_score}%</td>
+                    <td>{item.aml_score}%</td>
+                    <td>
+                      <span className={`badge clearance-${item.clearance}`}>{item.clearance}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </section>
       </div>
     </div>

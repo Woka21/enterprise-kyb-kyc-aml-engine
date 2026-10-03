@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   postgres:
-    image: postgres:15
+    image: postgres:15-alpine
     container_name: compliance-postgres
     environment:
       POSTGRES_DB: compliance
@@ -12,13 +12,19 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U compliance"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   api:
     build:
       context: ./apps/api
     container_name: compliance-api
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgresql://compliance:compliance_secret@postgres:5432/compliance
       APP_ENV: development
@@ -26,6 +32,8 @@ services:
       - "8001:8000"
     volumes:
       - ./apps/api:/app
+      - /app/__pycache__
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   web:
     build:
@@ -46,33 +54,39 @@ services:
       context: ./services/kyb_worker
     container_name: kyb-worker
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgresql://compliance:compliance_secret@postgres:5432/compliance
     volumes:
       - ./services/kyb_worker:/app
+      - /app/__pycache__
 
   kyc-worker:
     build:
       context: ./services/kyc_worker
     container_name: kyc-worker
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgresql://compliance:compliance_secret@postgres:5432/compliance
     volumes:
       - ./services/kyc_worker:/app
+      - /app/__pycache__
 
   aml-engine:
     build:
       context: ./services/aml_engine
     container_name: aml-engine
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgresql://compliance:compliance_secret@postgres:5432/compliance
     volumes:
       - ./services/aml_engine:/app
+      - /app/__pycache__
 
 volumes:
   postgres_data:

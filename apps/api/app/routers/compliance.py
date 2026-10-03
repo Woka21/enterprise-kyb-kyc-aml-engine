@@ -1,86 +1,83 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+import uuid
 
+from app.db import get_db
+from app.models import ComplianceCase
 from app.schemas import ComplianceStatus, ComplianceSubmission
 
 router = APIRouter(prefix="/compliance", tags=["compliance"])
 
-INITIAL_CASES = [
-    {
-        "id": "case-1001",
-        "company_name": "Nairobi Traders Ltd",
-        "kra_pin": "P051234567Z",
-        "status": "under_review",
-        "kyb_score": 92,
-        "kyc_score": 88,
-        "aml_score": 96,
-        "clearance": "pending",
-    },
-    {
-        "id": "case-1002",
-        "company_name": "Kenya Capital Group",
-        "kra_pin": "P089876543Q",
-        "status": "cleared",
-        "kyb_score": 97,
-        "kyc_score": 94,
-        "aml_score": 99,
-        "clearance": "approved",
-    },
-]
-
 
 @router.get("/cases")
-def list_cases() -> list[dict]:
-    return INITIAL_CASES
+def list_cases(db: Session = Depends(get_db)) -> list[dict]:
+    """List all compliance cases."""
+    cases = db.query(ComplianceCase).order_by(ComplianceCase.created_at.desc()).all()
+    return [
+        {
+            "id": case.case_id,
+            "company_name": case.company_name,
+            "kra_pin": case.kra_pin,
+            "status": case.status,
+            "kyb_score": int(case.kyb_score),
+            "kyc_score": int(case.kyc_score),
+            "aml_score": int(case.aml_score),
+            "clearance": case.clearance,
+        }
+        for case in cases
+    ]
 
 
 @router.post("/submit")
-def submit_case(payload: ComplianceSubmission) -> dict:
-    case_id = f"case-{len(INITIAL_CASES) + 1000}"
-    result = {
-        "id": case_id,
-        "company_name": payload.company_name,
-        "kra_pin": payload.kra_pin,
-        "director_name": payload.director_name,
-        "document_type": payload.document_type,
-        "risk_level": payload.risk_level,
-        "status": "submitted",
+def submit_case(payload: ComplianceSubmission, db: Session = Depends(get_db)) -> dict:
+    """Submit a new compliance case."""
+    case_id = str(uuid.uuid4())[:8]
+    
+    new_case = ComplianceCase(
+        case_id=f"case-{case_id}",
+        company_name=payload.company_name,
+        kra_pin=payload.kra_pin,
+        director_name=payload.director_name,
+        document_type=payload.document_type,
+        risk_level=payload.risk_level,
+        status="submitted",
+        kyb_score=88,
+        kyc_score=84,
+        aml_score=90,
+        clearance="pending",
+    )
+    
+    db.add(new_case)
+    db.commit()
+    db.refresh(new_case)
+    
+    return {
+        "id": new_case.case_id,
+        "company_name": new_case.company_name,
+        "kra_pin": new_case.kra_pin,
+        "director_name": new_case.director_name,
+        "document_type": new_case.document_type,
+        "risk_level": new_case.risk_level,
+        "status": new_case.status,
         "message": "Compliance intake created successfully.",
     }
-    INITIAL_CASES.insert(0, {
-        "id": case_id,
-        "company_name": payload.company_name,
-        "kra_pin": payload.kra_pin,
-        "status": "submitted",
-        "kyb_score": 88,
-        "kyc_score": 84,
-        "aml_score": 90,
-        "clearance": "pending",
-    })
-    return result
 
 
 @router.get("/status/{case_id}")
-def get_case_status(case_id: str) -> ComplianceStatus:
-    match = next((item for item in INITIAL_CASES if item["id"] == case_id), None)
-    if match is None:
-        return ComplianceStatus(
-            id=case_id,
-            company_name="Unknown Client",
-            kra_pin="N/A",
-            status="in_progress",
-            kyb_score=0,
-            kyc_score=0,
-            aml_score=0,
-            clearance="review",
-        )
+def get_case_status(case_id: str, db: Session = Depends(get_db)) -> ComplianceStatus:
+    """Get detailed status of a specific compliance case."""
+    case = db.query(ComplianceCase).filter(ComplianceCase.case_id == case_id).first()
+    
+    if not case:
+        raise HTTPException(status_code=404, detail=f"Case {case_id} not found")
 
     return ComplianceStatus(
-        id=match["id"],
-        company_name=match["company_name"],
-        kra_pin=match["kra_pin"],
-        status=match["status"],
-        kyb_score=match["kyb_score"],
-        kyc_score=match["kyc_score"],
-        aml_score=match["aml_score"],
-        clearance=match["clearance"],
+        id=case.case_id,
+        company_name=case.company_name,
+        kra_pin=case.kra_pin,
+        status=case.status,
+        kyb_score=int(case.kyb_score),
+        kyc_score=int(case.kyc_score),
+        aml_score=int(case.aml_score),
+        clearance=case.clearance,
     )
