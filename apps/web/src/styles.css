@@ -1,0 +1,122 @@
+:root {
+  font-family: Inter, Arial, sans-serif;
+  background: #07131f;
+  color: #ecf5ff;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #07131f 0%, #0f1e2d 100%);
+}
+
+button {
+  font: inherit;
+}
+
+.page-shell {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px 80px;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #7ec8ff;
+  font-size: 12px;
+  margin: 0 0 8px;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3rem);
+}
+
+.primary-btn {
+  background: #54b3ff;
+  border: none;
+  color: #021019;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 18px;
+  margin-bottom: 28px;
+}
+
+.card,
+.panel {
+  background: rgba(11, 29, 42, 0.85);
+  border: 1px solid rgba(126, 200, 255, 0.15);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+}
+
+.card {
+  padding: 18px 20px;
+}
+
+.card span {
+  display: block;
+  color: #9ec7e8;
+  margin-bottom: 12px;
+}
+
+.card strong {
+  font-size: 2rem;
+}
+
+.panel {
+  padding: 24px;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.panel-header h2 {
+  margin: 0;
+}
+
+.panel-header span {
+  color: #9ec7e8;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 14px 12px;
+  border-bottom: 1px solid rgba(126, 200, 255, 0.1);
+}
+
+th {
+  color: #9ec7e8;
+  font-weight: 600;
+}

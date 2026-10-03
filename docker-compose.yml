@@ -1,0 +1,78 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: compliance-postgres
+    environment:
+      POSTGRES_DB: compliance
+      POSTGRES_USER: compliance
+      POSTGRES_PASSWORD: compliance_secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: ./apps/api
+    container_name: compliance-api
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgresql://compliance:compliance_secret@postgres:5432/compliance
+      APP_ENV: development
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./apps/api:/app
+
+  web:
+    build:
+      context: ./apps/web
+    container_name: compliance-web
+    depends_on:
+      - api
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:8001
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules
+
+  kyb-worker:
+    build:
+      context: ./services/kyb_worker
+    container_name: kyb-worker
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgresql://compliance:compliance_secret@postgres:5432/compliance
+    volumes:
+      - ./services/kyb_worker:/app
+
+  kyc-worker:
+    build:
+      context: ./services/kyc_worker
+    container_name: kyc-worker
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgresql://compliance:compliance_secret@postgres:5432/compliance
+    volumes:
+      - ./services/kyc_worker:/app
+
+  aml-engine:
+    build:
+      context: ./services/aml_engine
+    container_name: aml-engine
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgresql://compliance:compliance_secret@postgres:5432/compliance
+    volumes:
+      - ./services/aml_engine:/app
+
+volumes:
+  postgres_data:
