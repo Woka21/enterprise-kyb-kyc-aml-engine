@@ -36,6 +36,7 @@ export default function App() {
   const [statusMessage, setStatusMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedCase, setSelectedCase] = useState<CaseRecord | null>(null);
 
   const fetchCases = async () => {
     try {
@@ -77,7 +78,7 @@ export default function App() {
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const result = await response.json();
-      setStatusMessage(`✓ Case ${result.id} created successfully. Compliance check initiated.`);
+      setStatusMessage(`✓ Case ${result.id} created. KRA/KYC/AML checks in progress...`);
       setForm(initialForm);
       await fetchCases();
     } catch (err) {
@@ -89,11 +90,25 @@ export default function App() {
     }
   };
 
+  const downloadCertificate = async (caseId: string) => {
+    try {
+      const response = await fetch(`${API_URL}/api/v1/compliance/certificate/${caseId}`, {
+        method: 'POST',
+      });
+      if (!response.ok) throw new Error('Failed to generate certificate');
+      const result = await response.json();
+      setStatusMessage(`✓ Certificate generated: ${result.pdf_filename}`);
+    } catch (err) {
+      setStatusMessage(`✗ Failed to generate certificate`);
+      console.error(err);
+    }
+  };
+
   const stats = {
     total: cases.length + 1240,
     approved: cases.filter((item) => item.clearance === 'approved').length + 1185,
     review: cases.filter((item) => item.status === 'submitted' || item.status === 'under_review').length + 42,
-    alerts: cases.filter((item) => item.risk_level === 'high').length + 7,
+    alerts: cases.filter((item) => item.aml_score < 80).length + 7,
   };
 
   return (
@@ -102,6 +117,7 @@ export default function App() {
         <div>
           <p className="eyebrow">Enterprise compliance platform</p>
           <h1>KYB / KYC / AML Engine</h1>
+          <p className="subtitle">Real KRA, KYC & Sanctions Verification</p>
         </div>
         {error && <div className="error-banner">⚠️ API Connection Issue</div>}
       </header>
@@ -120,7 +136,7 @@ export default function App() {
           <strong>{stats.review.toLocaleString()}</strong>
         </div>
         <div className="card">
-          <span>Risk alerts</span>
+          <span>AML flags</span>
           <strong>{stats.alerts}</strong>
         </div>
       </section>
@@ -129,7 +145,7 @@ export default function App() {
         <section className="panel form-panel">
           <div className="panel-header">
             <h2>Vendor onboarding</h2>
-            <span>ODPC consent included</span>
+            <span>Live KRA/KYC/AML checks</span>
           </div>
 
           <form onSubmit={handleSubmit} className="onboarding-form">
@@ -187,11 +203,11 @@ export default function App() {
 
             <div className="consent-row">
               <input type="checkbox" defaultChecked required />
-              <span>I consent to the compliance review and data processing required under the ODPC Act.</span>
+              <span>I consent to compliance review and data processing under ODPC Act.</span>
             </div>
 
             <button type="submit" className="submit-btn" disabled={isSubmitting}>
-              {isSubmitting ? 'Submitting...' : 'Submit for verification'}
+              {isSubmitting ? 'Running checks...' : 'Submit for verification'}
             </button>
           </form>
 
@@ -217,11 +233,11 @@ export default function App() {
               <thead>
                 <tr>
                   <th>Client</th>
-                  <th>Status</th>
                   <th>KYB</th>
                   <th>KYC</th>
                   <th>AML</th>
                   <th>Clearance</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -233,13 +249,34 @@ export default function App() {
                       <span className="pin">{item.kra_pin}</span>
                     </td>
                     <td>
-                      <span className={`badge status-${item.status}`}>{item.status.replace('_', ' ')}</span>
+                      <div className="score-bar">
+                        <div className="score-fill" style={{ width: `${item.kyb_score}%` }}></div>
+                      </div>
+                      <span>{item.kyb_score}%</span>
                     </td>
-                    <td>{item.kyb_score}%</td>
-                    <td>{item.kyc_score}%</td>
-                    <td>{item.aml_score}%</td>
+                    <td>
+                      <div className="score-bar">
+                        <div className="score-fill" style={{ width: `${item.kyc_score}%` }}></div>
+                      </div>
+                      <span>{item.kyc_score}%</span>
+                    </td>
+                    <td>
+                      <div className="score-bar">
+                        <div className="score-fill" style={{ width: `${item.aml_score}%` }}></div>
+                      </div>
+                      <span>{item.aml_score}%</span>
+                    </td>
                     <td>
                       <span className={`badge clearance-${item.clearance}`}>{item.clearance}</span>
+                    </td>
+                    <td>
+                      <button
+                        className="action-btn"
+                        onClick={() => downloadCertificate(item.id)}
+                        title="Download compliance certificate"
+                      >
+                        📄 PDF
+                      </button>
                     </td>
                   </tr>
                 ))}

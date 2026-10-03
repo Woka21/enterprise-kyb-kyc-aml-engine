@@ -36,6 +36,12 @@ select {
   margin-bottom: 32px;
 }
 
+.subtitle {
+  color: #7ec8ff;
+  font-size: 0.95rem;
+  margin: 4px 0 0 0;
+}
+
 .error-banner {
   background: rgba(255, 100, 100, 0.15);
   border: 1px solid rgba(255, 100, 100, 0.4);
@@ -67,7 +73,8 @@ h2 {
 }
 
 .primary-btn,
-.submit-btn {
+.submit-btn,
+.action-btn {
   background: #54b3ff;
   border: none;
   color: #021019;
@@ -79,7 +86,8 @@ h2 {
 }
 
 .primary-btn:hover,
-.submit-btn:hover:not(:disabled) {
+.submit-btn:hover:not(:disabled),
+.action-btn:hover {
   background: #3fa5ff;
 }
 
@@ -92,6 +100,11 @@ h2 {
   width: 100%;
   margin-top: 10px;
   padding: 14px 20px;
+}
+
+.action-btn {
+  padding: 8px 12px;
+  font-size: 0.85rem;
 }
 
 .summary-cards {
@@ -259,6 +272,20 @@ td .pin {
   margin-top: 2px;
 }
 
+.score-bar {
+  height: 6px;
+  background: rgba(126, 200, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.score-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #54b3ff, #7ec8ff);
+  transition: width 0.3s ease;
+}
+
 .badge {
   display: inline-block;
   padding: 4px 8px;
@@ -266,22 +293,6 @@ td .pin {
   font-size: 0.8rem;
   font-weight: 600;
   text-transform: capitalize;
-}
-
-.badge.status-submitted {
-  background: rgba(126, 200, 255, 0.15);
-  color: #7ec8ff;
-}
-
-.badge.status-under_review,
-.badge.status-under-review {
-  background: rgba(255, 180, 100, 0.15);
-  color: #ffb464;
-}
-
-.badge.status-cleared {
-  background: rgba(100, 214, 100, 0.15);
-  color: #64d664;
 }
 
 .badge.clearance-pending {
