@@ -1,36 +1,35 @@
 # Enterprise KYB / KYC / AML Compliance Engine
 
-This repository packages the architecture described in the ADR into a working starter project for a white-label compliance orchestration platform tailored for Kenya and East Africa.
+This repository packages the architecture described in the ADR into a working MVP for a white-label compliance orchestration platform tailored for Kenya and East Africa.
 
-## Overview
+## What is included
 
-The system is designed to support:
-
-- Corporate verification (KYB)
-- Director identity matching (KYC)
-- AML / PEP screening
-- Case workflow orchestration
-- PDF-ready audit outputs
-- White-label deployment for enterprise clients
+- White-label onboarding form for vendors and suppliers
+- Executive review dashboard for compliance officers
+- FastAPI backend with compliance case endpoints
+- React frontend for operator actions
+- Docker Compose environment with Postgres and worker containers
+- Guidance for local AML watchlist integration
 
 ## Architecture
 
 - Web UI: React + Vite
 - API: FastAPI
-- Orchestration: Ballerine-inspired workflow service
-- AML engine: local OpenSanctions-style matching with PostgreSQL
-- KYB worker: Playwright-based public checker worker
-- KYC worker: OCR + facial comparison worker
-- Container orchestration: Docker Compose
+- Orchestration: Ballerine-inspired operations model
+- AML engine: local watchlist matching layer ready to connect
+- KYB worker: Playwright-style automation service
+- KYC worker: OCR and ID validation worker
+- Deployment: Docker Compose
 
 ## Repository layout
 
-- `apps/web` – white-label client portal and operator dashboard
-- `apps/api` – FastAPI backend and orchestration endpoints
+- `apps/web` – white-label client portal and dashboard
+- `apps/api` – FastAPI backend and compliance routes
 - `services/kyb_worker` – automated KYB verification worker
-- `services/kyc_worker` – OCR and ID document processing worker
-- `services/aml_engine` – AML / sanctions matching service
-- `docker-compose.yml` – local environment
+- `services/kyc_worker` – OCR and identity matching worker
+- `services/aml_engine` – sanctions and PEP screening service
+- `docker-compose.yml` – local orchestration setup
+- `Makefile` – quick run commands
 
 ## Quick start
 
@@ -46,12 +45,11 @@ Then open:
 
 ## Sample enterprise flows
 
-- Vendor onboarding form
+- Vendor onboarding and ODPC consent capture
 - Compliance review dashboard
-- PDF certificate generation
-- National ID / passport verification
-- Sanctions and PEP screening
+- Risk and score snapshot by check type
+- Audit-ready compliance case lifecycle
 
 ## Notes
 
-This is a starter implementation focused on architecture and workflow structure. It is intentionally designed to be extensible for real integration with government portals, OCR tooling, and sanctions data ingestion.
+This is a functioning MVP starter designed to be extended for government integrations, OCR pipelines, sanctions ingestion, PDF exports, and production deployment.
